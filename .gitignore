@@ -31,3 +31,17 @@ build/
 
 ### VS Code ###
 .vscode/
+
+uploads/
+/uploads/**
+
+# Archivos de configuración de variables de entorno
+.env
+.env.local
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
