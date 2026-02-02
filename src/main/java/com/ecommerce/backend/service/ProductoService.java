@@ -1,0 +1,144 @@
+package com.ecommerce.backend.service;
+
+import com.ecommerce.backend.dto.ProductoCreateDTO;
+import com.ecommerce.backend.dto.ProductoDTO;
+import com.ecommerce.backend.model.Categoria;
+import com.ecommerce.backend.model.Producto;
+import com.ecommerce.backend.repository.CategoriaRepository;
+import com.ecommerce.backend.repository.ProductoRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class ProductoService {
+    
+    private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
+    
+    // Obtener todos los productos activos
+    public List<ProductoDTO> obtenerProductosActivos() {
+        return productoRepository.findByActivoTrue()
+            .stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+    }
+    
+    // Obtener todos los productos (para admin)
+    public List<ProductoDTO> obtenerTodosLosProductos() {
+        return productoRepository.findAll()
+            .stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+    }
+    
+    // Buscar productos por nombre
+    public List<ProductoDTO> buscarPorNombre(String nombre) {
+        return productoRepository.buscarPorNombre(nombre)
+            .stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+    }
+    
+    // Buscar productos por categoría
+    public List<ProductoDTO> buscarPorCategoria(Long categoriaId) {
+        return productoRepository.findByCategoriaIdAndActivoTrue(categoriaId)
+            .stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+    }
+    
+    // Obtener producto por ID
+    public ProductoDTO obtenerProductoPorId(Long id) {
+        Producto producto = productoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado con ID: " + id));
+        return convertirADTO(producto);
+    }
+    
+    // Crear nuevo producto
+    @Transactional
+    public ProductoDTO crearProducto(ProductoCreateDTO dto) {
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+            .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getCategoriaId()));
+        
+        Producto producto = Producto.builder()
+            .nombre(dto.getNombre())
+            .descripcion(dto.getDescripcion())
+            .precio(dto.getPrecio())
+            .stock(dto.getStock())
+            .imagenes(dto.getImagenes())
+            .categoria(categoria)
+            .activo(true)
+            .tipoTalle(dto.getTipoTalle())
+            .talles(dto.getTalles())
+            .build();
+        
+        Producto guardado = productoRepository.save(producto);
+        return convertirADTO(guardado);
+    }
+    
+    // Actualizar producto
+    @Transactional
+    public ProductoDTO actualizarProducto(Long id, ProductoCreateDTO dto) {
+        Producto producto = productoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+            .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
+        
+        producto.setNombre(dto.getNombre());
+        producto.setDescripcion(dto.getDescripcion());
+        producto.setPrecio(dto.getPrecio());
+        producto.setStock(dto.getStock());
+        producto.setImagenes(dto.getImagenes());
+        producto.setCategoria(categoria);
+        producto.setTipoTalle(dto.getTipoTalle());
+        producto.setTalles(dto.getTalles());
+        
+        Producto actualizado = productoRepository.save(producto);
+        return convertirADTO(actualizado);
+    }
+    
+    // Pausar/Activar producto 
+    @Transactional
+    public ProductoDTO toggleEstadoProducto(Long id) {
+        Producto producto = productoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        
+        boolean estadoActual = Boolean.TRUE.equals(producto.getActivo());
+        producto.setActivo(!estadoActual);
+        
+        Producto actualizado = productoRepository.save(producto);
+        return convertirADTO(actualizado);
+    }
+    
+    // Eliminar producto
+    @Transactional
+    public void eliminarProducto(Long id) {
+        if (!productoRepository.existsById(id)) {
+            throw new RuntimeException("Producto no encontrado");
+        }
+        productoRepository.deleteById(id);
+    }
+    
+    // Convertir Entidad a DTO
+    private ProductoDTO convertirADTO(Producto producto) {
+        return ProductoDTO.builder()
+            .id(producto.getId())
+            .nombre(producto.getNombre())
+            .descripcion(producto.getDescripcion())
+            .precio(producto.getPrecio())
+            .stock(producto.getStock())
+            .imagenes(producto.getImagenes())
+            .activo(Boolean.TRUE.equals(producto.getActivo()))
+            .categoriaId(producto.getCategoria() != null ? producto.getCategoria().getId() : null)
+            .categoriaNombre(producto.getCategoria() != null ? producto.getCategoria().getNombre() : null)
+            .tipoTalle(producto.getTipoTalle())
+            .talles(producto.getTalles())
+            .build();
+    }
+}
