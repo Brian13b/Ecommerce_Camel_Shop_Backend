@@ -38,17 +38,18 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/auth/**",
-                    "/productos/publico/**",
-                    "/categorias/publico/**",
-                    "/uploads/**",
-                    "/pedidos/publico/**",
-                    "/hero-slides/publico/**"
+                    "/api/productos/publico/**",
+                    "/api/categorias/publico/**",
+                    "/api/uploads/**",
+                    "/api/pedidos/publico/**",
+                    "/api/hero-slides/publico/**"
                 ).permitAll()
                 .requestMatchers(
-                    "/productos/admin/**",
-                    "/categorias/admin/**",
-                    "/usuarios/**",
-                    "/pedidos/admin/**"
+                    "/api/productos/admin/**",
+                    "/api/categorias/admin/**",
+                    "/api/usuarios/**",
+                    "/api/pedidos/admin/**",
+                    "/api/hero-slides/admin/**"
                 ).authenticated()
                 .anyRequest().authenticated()
             )
