@@ -37,19 +37,19 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/auth/**",
-                    "/api/productos/publico/**",
-                    "/api/categorias/publico/**",
-                    "/api/uploads/**",
-                    "/api/pedidos/publico/**",
-                    "/api/hero-slides/publico/**"
+                    "/auth/**",
+                    "/productos/publico/**",
+                    "/categorias/publico/**",
+                    "/uploads/**",
+                    "/pedidos/publico/**",
+                    "/hero-slides/publico/**"
                 ).permitAll()
                 .requestMatchers(
-                    "/api/productos/admin/**",
-                    "/api/categorias/admin/**",
-                    "/api/usuarios/**",
-                    "/api/pedidos/admin/**",
-                    "/api/hero-slides/admin/**"
+                    "/productos/admin/**",
+                    "/categorias/admin/**",
+                    "/usuarios/**",
+                    "/pedidos/admin/**",
+                    "/hero-slides/admin/**"
                 ).authenticated()
                 .anyRequest().authenticated()
             )
