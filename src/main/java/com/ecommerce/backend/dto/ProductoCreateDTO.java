@@ -1,36 +1,40 @@
 package com.ecommerce.backend.dto;
 
-import jakarta.validation.constraints.*;
-import lombok.*;
 import java.math.BigDecimal;
-import java.util.Set;
 import java.util.List;
+import java.util.Map;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductoCreateDTO {
-    
-    @NotBlank(message = "El nombre es obligatorio")
-    @Size(min = 3, max = 100, message = "El nombre debe tener entre 3 y 100 caracteres")
+    @NotBlank @Size(min = 3, max = 100)
     private String nombre;
     
-    @Size(max = 500, message = "La descripción no puede exceder 500 caracteres")
+    @Size(max = 500)
     private String descripcion;
     
-    @NotNull(message = "El precio es obligatorio")
-    @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a 0")
+    @NotNull @DecimalMin("0.0")
     private BigDecimal precio;
-    
-    @NotNull(message = "El stock es obligatorio")
-    @Min(value = 0, message = "El stock no puede ser negativo")
-    private Integer stock;
-    
-    private String tipoTalle;
-    private Set<String> talles;
     
     private List<String> imagenes;
     
-    @NotNull(message = "La categoría es obligatoria")
+    @NotNull
     private Long categoriaId;
+
+    private List<VarianteDTO> variantes;
+
+    @Data
+    public static class VarianteDTO {
+        private String color;
+        private Map<String, Integer> stockPorTalle;
+    }
 }

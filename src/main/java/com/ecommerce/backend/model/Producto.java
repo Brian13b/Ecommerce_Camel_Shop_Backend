@@ -1,13 +1,29 @@
 package com.ecommerce.backend.model;
 
-import jakarta.persistence.*;
-import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "productos")
@@ -31,7 +47,7 @@ public class Producto {
     private BigDecimal precio;
     
     @Column(nullable = false)
-    private Integer stock;
+    private Integer stock; 
     
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "producto_imagenes", joinColumns = @JoinColumn(name = "producto_id"))
@@ -42,14 +58,10 @@ public class Producto {
     @Builder.Default
     @Column(nullable = false)
     private Boolean activo = true;
-    
-    private String tipoTalle;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "producto_talles", joinColumns = @JoinColumn(name = "producto_id"))
-    @Column(name = "talle")
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<String> talles = new HashSet<>();
+    private List<ProductoVariantes> variantes = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "categoria_id")
@@ -60,7 +72,12 @@ public class Producto {
     
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
-    
+
+    public void addVariante(ProductoVariantes variante) {
+        variantes.add(variante);
+        variante.setProducto(this);
+    }
+
     @PrePersist
     protected void onCreate() {
         fechaCreacion = LocalDateTime.now();

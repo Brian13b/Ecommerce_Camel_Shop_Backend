@@ -1,17 +1,20 @@
 package com.ecommerce.backend.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ecommerce.backend.dto.ProductoCreateDTO;
 import com.ecommerce.backend.dto.ProductoDTO;
 import com.ecommerce.backend.model.Categoria;
 import com.ecommerce.backend.model.Producto;
+import com.ecommerce.backend.model.ProductoVariantes;
 import com.ecommerce.backend.repository.CategoriaRepository;
 import com.ecommerce.backend.repository.ProductoRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -63,19 +66,19 @@ public class ProductoService {
     @Transactional
     public ProductoDTO crearProducto(ProductoCreateDTO dto) {
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-            .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + dto.getCategoriaId()));
+            .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
         
         Producto producto = Producto.builder()
             .nombre(dto.getNombre())
             .descripcion(dto.getDescripcion())
             .precio(dto.getPrecio())
-            .stock(dto.getStock())
             .imagenes(dto.getImagenes())
             .categoria(categoria)
             .activo(true)
-            .tipoTalle(dto.getTipoTalle())
-            .talles(dto.getTalles())
             .build();
+        
+        // Procesar Variantes y calcular Stock Total
+        procesarVariantes(producto, dto.getVariantes());
         
         Producto guardado = productoRepository.save(producto);
         return convertirADTO(guardado);
@@ -87,20 +90,61 @@ public class ProductoService {
         Producto producto = productoRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
         
-        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-            .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
-        
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
-        producto.setStock(dto.getStock());
         producto.setImagenes(dto.getImagenes());
+        
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+            .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
         producto.setCategoria(categoria);
-        producto.setTipoTalle(dto.getTipoTalle());
-        producto.setTalles(dto.getTalles());
+
+        producto.getVariantes().clear();
+        procesarVariantes(producto, dto.getVariantes());
         
         Producto actualizado = productoRepository.save(producto);
         return convertirADTO(actualizado);
+    }
+
+    private void procesarVariantes(Producto producto, List<ProductoCreateDTO.VarianteDTO> variantesDto) {
+        if (variantesDto == null) return;
+
+        int stockTotal = 0;
+        for (ProductoCreateDTO.VarianteDTO vDto : variantesDto) {
+            ProductoVariantes variante = ProductoVariantes.builder()
+                .color(vDto.getColor())
+                .stockPorTalle(vDto.getStockPorTalle())
+                .build();
+            
+            producto.addVariante(variante);
+            
+            // Sumar stock de cada talle para el total global
+            stockTotal += vDto.getStockPorTalle().values().stream()
+                .mapToInt(Integer::intValue).sum();
+        }
+        producto.setStock(stockTotal);
+    }
+
+    private ProductoDTO convertirADTO(Producto producto) {
+        List<ProductoDTO.VarianteDTO> variantesDto = producto.getVariantes().stream()
+            .map(v -> ProductoDTO.VarianteDTO.builder()
+                .color(v.getColor())
+                .stockPorTalle(v.getStockPorTalle())
+                .build())
+            .collect(Collectors.toList());
+
+        return ProductoDTO.builder()
+            .id(producto.getId())
+            .nombre(producto.getNombre())
+            .descripcion(producto.getDescripcion())
+            .precio(producto.getPrecio())
+            .stock(producto.getStock())
+            .imagenes(producto.getImagenes())
+            .activo(producto.getActivo())
+            .categoriaId(producto.getCategoria().getId())
+            .categoriaNombre(producto.getCategoria().getNombre())
+            .variantes(variantesDto)
+            .build();
     }
     
     // Pausar/Activar producto 
@@ -123,22 +167,5 @@ public class ProductoService {
             throw new RuntimeException("Producto no encontrado");
         }
         productoRepository.deleteById(id);
-    }
-    
-    // Convertir Entidad a DTO
-    private ProductoDTO convertirADTO(Producto producto) {
-        return ProductoDTO.builder()
-            .id(producto.getId())
-            .nombre(producto.getNombre())
-            .descripcion(producto.getDescripcion())
-            .precio(producto.getPrecio())
-            .stock(producto.getStock())
-            .imagenes(producto.getImagenes())
-            .activo(Boolean.TRUE.equals(producto.getActivo()))
-            .categoriaId(producto.getCategoria() != null ? producto.getCategoria().getId() : null)
-            .categoriaNombre(producto.getCategoria() != null ? producto.getCategoria().getNombre() : null)
-            .tipoTalle(producto.getTipoTalle())
-            .talles(producto.getTalles())
-            .build();
     }
 }

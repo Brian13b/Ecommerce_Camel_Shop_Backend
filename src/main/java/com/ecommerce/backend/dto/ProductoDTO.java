@@ -1,9 +1,13 @@
 package com.ecommerce.backend.dto;
 
-import lombok.*;
 import java.math.BigDecimal;
-import java.util.Set;
 import java.util.List;
+import java.util.Map;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -19,6 +23,12 @@ public class ProductoDTO {
     private Boolean activo;
     private Long categoriaId;
     private String categoriaNombre;
-    private String tipoTalle;
-    private Set<String> talles;
+    private List<VarianteDTO> variantes;
+
+    @Data
+    @Builder
+    public static class VarianteDTO {
+        private String color;
+        private Map<String, Integer> stockPorTalle;
+    }
 }
