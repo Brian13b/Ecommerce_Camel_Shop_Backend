@@ -1,6 +1,9 @@
 package com.ecommerce.backend.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -107,19 +110,24 @@ public class ProductoService {
     }
 
     private void procesarVariantes(Producto producto, List<ProductoCreateDTO.VarianteDTO> variantesDto) {
-        if (variantesDto == null) return;
+        if (variantesDto == null || variantesDto.isEmpty()) return;
 
         int stockTotal = 0;
         for (ProductoCreateDTO.VarianteDTO vDto : variantesDto) {
+            Map<String, Integer> stockMapa = vDto.getStockPorTalle() != null 
+                                            ? vDto.getStockPorTalle() 
+                                            : new HashMap<>();
+
             ProductoVariantes variante = ProductoVariantes.builder()
-                .color(vDto.getColor())
-                .stockPorTalle(vDto.getStockPorTalle())
+                .color(vDto.getColor() != null ? vDto.getColor() : "Único")
+                .stockPorTalle(stockMapa)
                 .build();
             
             producto.addVariante(variante);
             
-            // Sumar stock de cada talle para el total global
-            stockTotal += vDto.getStockPorTalle().values().stream()
+            // Sumamos solo si hay valores
+            stockTotal += stockMapa.values().stream()
+                .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).sum();
         }
         producto.setStock(stockTotal);
