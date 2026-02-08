@@ -125,7 +125,6 @@ public class ProductoService {
             
             producto.addVariante(variante);
             
-            // Sumamos solo si hay valores
             stockTotal += stockMapa.values().stream()
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).sum();
