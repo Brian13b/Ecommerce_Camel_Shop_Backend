@@ -1,16 +1,25 @@
 package com.ecommerce.backend.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.ecommerce.backend.dto.PedidoCreateDTO;
 import com.ecommerce.backend.model.EstadoPedido;
 import com.ecommerce.backend.model.Pedido;
-import com.ecommerce.backend.service.PedidoService;
 import com.ecommerce.backend.service.FileStorageService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import com.ecommerce.backend.service.PedidoService;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/pedidos")
@@ -23,6 +32,11 @@ public class PedidoController {
     // Crear pedido
     @PostMapping("/publico")
     public ResponseEntity<Pedido> crearPedido(@RequestBody PedidoCreateDTO dto) {
+        return ResponseEntity.ok(pedidoService.crearPedido(dto));
+    }
+
+    @PostMapping("/admin/manual")
+    public ResponseEntity<Pedido> crearPedidoManual(@RequestBody PedidoCreateDTO dto) {
         return ResponseEntity.ok(pedidoService.crearPedido(dto));
     }
 

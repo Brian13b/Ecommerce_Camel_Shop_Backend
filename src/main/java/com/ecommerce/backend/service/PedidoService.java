@@ -1,16 +1,23 @@
 package com.ecommerce.backend.service;
 
-import com.ecommerce.backend.dto.PedidoCreateDTO;
-import com.ecommerce.backend.model.*;
-import com.ecommerce.backend.repository.PedidoRepository;
-import com.ecommerce.backend.repository.ProductoRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ecommerce.backend.dto.PedidoCreateDTO;
+import com.ecommerce.backend.model.DetallePedido;
+import com.ecommerce.backend.model.EstadoPedido;
+import com.ecommerce.backend.model.Pedido;
+import com.ecommerce.backend.model.Producto;
+import com.ecommerce.backend.model.ProductoVariantes;
+import com.ecommerce.backend.repository.PedidoRepository;
+import com.ecommerce.backend.repository.ProductoRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -35,11 +42,8 @@ public class PedidoService {
             Producto producto = productoRepository.findById(itemDto.getProductoId())
                     .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + itemDto.getProductoId()));
 
-            if (producto.getStock() < itemDto.getCantidad()) {
-                throw new RuntimeException("No hay stock suficiente para: " + producto.getNombre());
-            }
+            procesarDescuentoStock(producto, itemDto.getTalle(), itemDto.getCantidad());
 
-            producto.setStock(producto.getStock() - itemDto.getCantidad());
             productoRepository.save(producto);
 
             BigDecimal precio = producto.getPrecio();
@@ -64,10 +68,43 @@ public class PedidoService {
         return pedidoRepository.save(pedido);
     }
 
+    private void procesarDescuentoStock(Producto producto, String talleString, Integer cantidad) {
+        if (producto.getStock() < cantidad) {
+            throw new RuntimeException("No hay stock global suficiente para: " + producto.getNombre());
+        }
+
+        producto.setStock(producto.getStock() - cantidad);
+
+        if (talleString != null && talleString.contains("-")) {
+            String[] partes = talleString.split("-");
+            if (partes.length >= 2) {
+                String color = partes[0].trim();
+                String talle = partes[1].trim();
+
+                ProductoVariantes variante = producto.getVariantes().stream()
+                    .filter(v -> v.getColor().equalsIgnoreCase(color))
+                    .findFirst()
+                    .orElse(null);
+
+                if (variante != null) {
+                    Map<String, Integer> stockMap = variante.getStockPorTalle();
+                    Integer stockActual = stockMap.getOrDefault(talle, 0);
+
+                    if (stockActual < cantidad) {
+                        throw new RuntimeException("No hay stock suficiente para " + color + " talle " + talle);
+                    }
+
+                    stockMap.put(talle, stockActual - cantidad);
+                }
+            }
+        }
+    }
+
     public List<Pedido> obtenerTodos() {
         return pedidoRepository.findAllByOrderByFechaDesc();
     }
     
+    @Transactional
     public Pedido cambiarEstado(Long id, EstadoPedido nuevoEstado) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
@@ -84,6 +121,21 @@ public class PedidoService {
         for (DetallePedido detalle : pedido.getDetalles()) {
             Producto p = detalle.getProducto();
             p.setStock(p.getStock() + detalle.getCantidad());
+
+            String talleString = detalle.getTalleSeleccionado();
+            if (talleString != null && talleString.contains("-")) {
+                String[] partes = talleString.split("-");
+                String color = partes[0].trim();
+                String talle = partes[1].trim();
+
+                p.getVariantes().stream()
+                    .filter(v -> v.getColor().equalsIgnoreCase(color))
+                    .findFirst()
+                    .ifPresent(v -> {
+                        int current = v.getStockPorTalle().getOrDefault(talle, 0);
+                        v.getStockPorTalle().put(talle, current + detalle.getCantidad());
+                    });
+            }
             productoRepository.save(p);
         }
     }
@@ -96,6 +148,4 @@ public class PedidoService {
     public Pedido actualizarPedido(Pedido pedido) {
         return pedidoRepository.save(pedido);
     }
-
-
 }
