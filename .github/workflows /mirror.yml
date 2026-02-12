@@ -2,8 +2,7 @@ name: Mirroring a GB Soluciones Digitales
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
