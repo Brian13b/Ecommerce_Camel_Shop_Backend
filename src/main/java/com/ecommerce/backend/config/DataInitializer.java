@@ -19,7 +19,6 @@ import com.ecommerce.backend.repository.ProductoRepository;
 import com.ecommerce.backend.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
-
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
